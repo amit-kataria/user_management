@@ -78,7 +78,8 @@ class JWTValidator:
             self.fetch_jwks()
         return self.jwks_keys.get(kid)
 
-    async def verify_token(token: str):
+    async def verify_token(self, token: str):
+        log.debug(f"verify_token: {token}")
         if not token:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -107,8 +108,8 @@ class JWTValidator:
                     "verify_signature": True,
                     "verify_aud": False,
                     "verify_iss": False,
+                    "leeway": CLOCK_SKEW_SECONDS,
                 },
-                leeway=CLOCK_SKEW_SECONDS,
             )
 
             # Replay protection
@@ -169,14 +170,21 @@ validator = JWTValidator()
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
-    return validator.verify_token(token)
+    log.debug(f"get_current_user: {token}")
+    return await validator.verify_token(token)
 
 
 def require_role(required_role: str):
     def role_checker(token_data=Depends(get_current_user)):
-        roles = token_data.get("roles", [])
+        log.debug(
+            f"role_checker: checking for required role {required_role} in {token_data}"
+        )
+        role = token_data.get("role", "")
+        roles = [role]
+        log.debug(f"role_checker: role: {roles}")
 
         if required_role not in roles:
+            log.warning(f"Insufficient privileges for role {required_role}")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient privileges"
             )

@@ -1,30 +1,35 @@
+from typing import List
 import os
 from dotenv import load_dotenv
+from pydantic_settings import BaseSettings
 
 load_dotenv()
 
 
-class Config:
-    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-    MONGO_DB_NAME = os.getenv("MONGO_DB_NAME", "user_management")
+class Config(BaseSettings):
+    MONGO_URI: str = "mongodb://localhost:27017"
+    MONGO_DB_NAME: str = "test"
 
-    REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-    REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
 
-    JWKS_URL = os.getenv("JWKS_URL", "http://localhost:5055/oauth/jkws")
+    JWKS_URL: str = "http://localhost:5055/oauth2/jwks"
 
     # Audit
-    AUDIT_COLLECTION = "audit_logs"
+    AUDIT_COLLECTION: str = "audit_logs"
 
     # Email / SMTP (Placeholder configs)
-    SMTP_HOST = os.getenv("SMTP_HOST", "localhost")
-    SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-    SMTP_USER = os.getenv("SMTP_USER", "user")
-    SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "password")
+    SMTP_HOST: str = "localhost"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = "user"
+    SMTP_PASSWORD: str = "password"
 
     # Service
-    SERVICE_NAME = "user-management-service"
-    ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+    SERVICE_NAME: str = "user-management-service"
+    ENVIRONMENT: str = "development"
+
+    # CORS
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
 
 
 config = Config()

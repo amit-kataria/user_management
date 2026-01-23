@@ -24,14 +24,18 @@ class PermissionRepository:
         cursor = self.collection().find()
         perms = []
         async for doc in cursor:
-            perms.append(Permission(**doc))
+            doc["_id"] = str(doc["_id"])
+            perms.append(Permission.model_validate(doc))
         return perms
 
     async def get_by_id(self, perm_id: str) -> Optional[Permission]:
         if not ObjectId.is_valid(perm_id):
             return None
         doc = await self.collection().find_one({"_id": ObjectId(perm_id)})
-        return Permission(**doc) if doc else None
+        if not doc:
+            return None
+        doc["_id"] = str(doc["_id"])
+        return Permission.model_validate(doc)
 
     async def delete(self, perm_id: str) -> bool:
         if not ObjectId.is_valid(perm_id):

@@ -99,7 +99,7 @@ class UserService:
             )
         return success
 
-    async def search_users(self, query: dict) -> List[User]:
+    async def search_users(self, query: dict, tenant: str) -> List[User]:
         mongo_filter = {}
         if "name" in query and query["name"]:
             mongo_filter["$or"] = [
@@ -109,9 +109,9 @@ class UserService:
         if "role" in query and query["role"]:
             # Needs careful handling of mongo ref if query is by role name vs role ID
             pass
-        if "tenant" in query and query["tenant"]:
-            mongo_filter["tenant"] = query["tenant"]
 
+        mongo_filter["tenantId"] = tenant
+        log.debug(f"search_users mongo_filter -> {mongo_filter}")
         return await user_repo.get_all(filter_query=mongo_filter)
 
     async def invite_user(self, user_in: User, performed_by: str) -> User:

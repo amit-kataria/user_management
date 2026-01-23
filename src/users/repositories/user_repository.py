@@ -16,8 +16,8 @@ class UserRepository:
         return db.get_db()[self.collection_name]
 
     async def create(self, user: User) -> User:
-        user_dict = user.model_dump(by_alias=True, exclude={"id"})
-        result = await self.collection().insert_one(user_dict)
+        data = user.model_dump(by_alias=True, exclude={"id"})
+        result = await self.collection().insert_one(data)
         user.id = str(result.inserted_id)
         return user
 
@@ -25,51 +25,63 @@ class UserRepository:
         if not ObjectId.is_valid(user_id):
             return None
         doc = await self.collection().find_one({"_id": ObjectId(user_id)})
-        return User(**doc) if doc else None
+        if not doc:
+            return None
+        doc["_id"] = str(doc["_id"])
+        return User.model_validate(doc)
 
     async def get_by_email(self, email: str) -> Optional[User]:
         doc = await self.collection().find_one({"email": email})
-        return User(**doc) if doc else None
+        if not doc:
+            return None
+        doc["_id"] = str(doc["_id"])
+        return User.model_validate(doc)
 
     async def get_all(
-        self, skip: int = 0, limit: int = 20, filter_query: dict = {}
+        self,
+        skip: int = 0,
+        limit: int = 20,
+        filter_query: Optional[dict] = None,
     ) -> List[User]:
+        filter_query = filter_query or {}
+        log.debug(f"get_all filter_query -> {filter_query}")
+
         cursor = self.collection().find(filter_query).skip(skip).limit(limit)
         users = []
+
         async for doc in cursor:
-            users.append(User(**doc))
+            doc["_id"] = str(doc["_id"])
+            users.append(User.model_validate(doc))
+
         return users
 
     async def update(self, user_id: str, update_data: dict) -> bool:
         if not ObjectId.is_valid(user_id):
             return False
         update_data["updatedAt"] = datetime.utcnow()
-        result = await self.collection().update_one(
+        res = await self.collection().update_one(
             {"_id": ObjectId(user_id)}, {"$set": update_data}
         )
-        return result.modified_count > 0
+        return res.modified_count > 0
 
     async def soft_delete(self, user_id: str) -> bool:
         if not ObjectId.is_valid(user_id):
             return False
-        # Soft delete with 3 month retention logic handled by checking deletedAt or TTL index
-        # And status update
         update_data = {
             "deletedAt": datetime.utcnow(),
             "enabled": False,
-            "attributes.status": "Deleted",  # Or however we track lifecycle
+            "attributes.status": "Deleted",
             "updatedAt": datetime.utcnow(),
         }
-        result = await self.collection().update_one(
+        res = await self.collection().update_one(
             {"_id": ObjectId(user_id)}, {"$set": update_data}
         )
-        return result.modified_count > 0
+        return res.modified_count > 0
 
     async def ensure_indexes(self):
         await self.collection().create_index("email", unique=True)
-        # TTL index for deletedAt
-        # DB will auto-remove documents 3 months (roughly 90 days) after deletedAt
-        # 90 * 24 * 60 * 60 = 7776000
+        await self.collection().create_index("roleId")
+        await self.collection().create_index("permissionIds")
         await self.collection().create_index("deletedAt", expireAfterSeconds=7776000)
 
 

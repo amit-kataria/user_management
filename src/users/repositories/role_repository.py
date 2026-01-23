@@ -25,17 +25,24 @@ class RoleRepository:
         if not ObjectId.is_valid(role_id):
             return None
         doc = await self.collection().find_one({"_id": ObjectId(role_id)})
-        return Role(**doc) if doc else None
+        if not doc:
+            return None
+        doc["_id"] = str(doc["_id"])
+        return Role.model_validate(doc)
 
     async def get_by_name(self, name: str) -> Optional[Role]:
         doc = await self.collection().find_one({"name": name})
-        return Role(**doc) if doc else None
+        if not doc:
+            return None
+        doc["_id"] = str(doc["_id"])
+        return Role.model_validate(doc)
 
     async def get_all(self) -> List[Role]:
         cursor = self.collection().find()
         roles = []
         async for doc in cursor:
-            roles.append(Role(**doc))
+            doc["_id"] = str(doc["_id"])
+            roles.append(Role.model_validate(doc))
         return roles
 
     async def update(self, role_id: str, data: dict) -> bool:

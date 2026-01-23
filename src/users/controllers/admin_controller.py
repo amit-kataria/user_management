@@ -17,13 +17,17 @@ def get_current_sub(token_data=Depends(get_current_user)):
     return token_data.get("sub", "unknown")
 
 
-@router.post("/admins/create-user", dependencies=[Depends(require_role("ROLE_ADMIN"))])
-async def create_auto_confirmed_user(user: User, sub: str = Depends(get_current_sub)):
-    return await user_service.create_auto_confirmed_user(user, sub)
+@router.post("/admins/create-user")
+async def create_auto_confirmed_user(
+    user: User, token_data=Depends(require_role("ROLE_ADMIN"))
+):
+    log.debug(f"create_auto_confirmed_user: {user}")
+    return await user_service.create_auto_confirmed_user(user, token_data["sub"])
 
 
-@router.get("/admins/{id}", dependencies=[Depends(require_role("ROLE_ADMIN"))])
-async def get_any_user(id: str, sub: str = Depends(get_current_sub)):
+@router.get("/admins/{id}")
+async def get_any_user(id: str, token_data=Depends(require_role("ROLE_ADMIN"))):
+    log.debug(f"get_any_user: {id}")
     u = await user_service.get_user(id)
     if not u:
         raise HTTPException(404, "User not found")
@@ -31,45 +35,54 @@ async def get_any_user(id: str, sub: str = Depends(get_current_sub)):
 
 
 @router.post("/admin/users/search")
-async def search_users(query: Dict = Body(...), sub: str = Depends(get_current_sub)):
-    return await user_service.search_users(query)
+async def search_users(
+    query: Dict = Body(...), token_data=Depends(require_role("ROLE_ADMIN"))
+):
+    log.debug(f"search_users: {query}")
+    tenant = token_data.get("tenantId", "")
+    return await user_service.search_users(query, tenant)
 
 
 @router.post("/admin/user")
-async def invite_user(user: User, sub: str = Depends(get_current_sub)):
-    return await user_service.invite_user(user, sub)
+async def invite_user(user: User, token_data=Depends(require_role("ROLE_ADMIN"))):
+    log.debug(f"invite_user: {user}")
+    return await user_service.invite_user(user, token_data["sub"])
 
 
 @router.post("/admin/user/{id}/password")
 async def change_user_password(
-    id: str, payload: Dict = Body(...), sub: str = Depends(get_current_sub)
+    id: str, payload: Dict = Body(...), token_data=Depends(require_role("ROLE_ADMIN"))
 ):
+    log.debug(f"change_user_password: {id}, {payload}")
     new_pass = payload.get("password")
     if not new_pass:
         raise HTTPException(400, "Password required")
-    await user_service.change_password(id, new_pass, sub)
+    await user_service.change_password(id, new_pass, token_data["sub"])
     return {"message": "Password updated"}
 
 
 @router.post("/admin/user/{id}/permissions")
 async def add_permission_to_user(
-    id: str, perm_ref: MongoRef, sub: str = Depends(get_current_sub)
+    id: str, perm_ref: MongoRef, token_data=Depends(require_role("ROLE_ADMIN"))
 ):
-    await user_service.add_permission(id, perm_ref, sub)
+    log.debug(f"add_permission_to_user: {id}, {perm_ref}")
+    await user_service.add_permission(id, perm_ref, token_data["sub"])
     return {"message": "Permission added"}
 
 
 @router.put("/admin/user/{id}")
 async def update_user(
-    id: str, payload: Dict = Body(...), sub: str = Depends(get_current_sub)
+    id: str, payload: Dict = Body(...), token_data=Depends(require_role("ROLE_ADMIN"))
 ):
-    await user_service.update_user(id, payload, sub)
+    log.debug(f"update_user: {id}, {payload}")
+    await user_service.update_user(id, payload, token_data["sub"])
     return {"message": "User updated"}
 
 
 @router.delete("/admin/user/{id}")
-async def delete_user(id: str, sub: str = Depends(get_current_sub)):
-    await user_service.soft_delete(id, sub)
+async def delete_user(id: str, token_data=Depends(require_role("ROLE_ADMIN"))):
+    log.debug(f"delete_user: {id}")
+    await user_service.soft_delete(id, token_data["sub"])
     return {"message": "User deleted (soft)"}
 
 
@@ -77,60 +90,62 @@ async def delete_user(id: str, sub: str = Depends(get_current_sub)):
 async def remove_user_permission(
     id: str,
     permission_id: str = Body(..., embed=True),
-    sub: str = Depends(get_current_sub),
+    token_data=Depends(require_role("ROLE_ADMIN")),
 ):
     # Note: Using Body for permission_id as typical for DELETE with payload or query param "permission_id"
     # User said "DELETE /admin/user/{id}/permission", implying payload or query. I'll support Body or move to Query if needed.
-    await user_service.remove_permission(id, permission_id, sub)
+    await user_service.remove_permission(id, permission_id, token_data["sub"])
     return {"message": "Permission removed"}
 
 
 @router.post("/admin/permission")
-async def create_permission(perm: Permission, sub: str = Depends(get_current_sub)):
-    return await permission_service.create_permission(perm, sub)
+async def create_permission(
+    perm: Permission, token_data=Depends(require_role("ROLE_ADMIN"))
+):
+    return await permission_service.create_permission(perm, token_data["sub"])
 
 
 @router.delete("/admin/permission")
 async def delete_permission(
-    id: str = Body(..., embed=True), sub: str = Depends(get_current_sub)
+    id: str = Body(..., embed=True), token_data=Depends(require_role("ROLE_ADMIN"))
 ):
-    await permission_service.delete_permission(id, sub)
+    await permission_service.delete_permission(id, token_data["sub"])
     return {"message": "Permission deleted"}
 
 
 @router.post("/admin/role")
-async def create_role(role: Role, sub: str = Depends(get_current_sub)):
-    return await role_service.create_role(role, sub)
+async def create_role(role: Role, token_data=Depends(require_role("ROLE_ADMIN"))):
+    return await role_service.create_role(role, token_data["sub"])
 
 
 @router.put("/admin/role")
 async def add_permission_to_role(
     role_id: str = Body(...),
     permission: MongoRef = Body(...),
-    sub: str = Depends(get_current_sub),
+    token_data=Depends(require_role("ROLE_ADMIN")),
 ):
-    await role_service.add_permission_to_role(role_id, permission, sub)
+    await role_service.add_permission_to_role(role_id, permission, token_data["sub"])
     return {"message": "Permission added to role"}
 
 
 @router.delete("/admin/role")
 async def delete_role(
-    role_id: str = Body(..., embed=True), sub: str = Depends(get_current_sub)
+    role_id: str = Body(..., embed=True), token_data=Depends(require_role("ROLE_ADMIN"))
 ):
-    await role_service.delete_role(role_id, sub)
+    await role_service.delete_role(role_id, token_data["sub"])
     return {"message": "Role deleted"}
 
 
 @router.get("/admin/user/{id}")
-async def get_user_admin(id: str, sub: str = Depends(get_current_sub)):
+async def get_user_admin(id: str, token_data=Depends(require_role("ROLE_ADMIN"))):
     return await user_service.get_user(id)
 
 
 @router.get("/admin/roles")
-async def get_roles(sub: str = Depends(get_current_sub)):
+async def get_roles(token_data=Depends(require_role("ROLE_ADMIN"))):
     return await role_service.get_all_roles()
 
 
 @router.get("/admin/permissions")
-async def get_permissions(sub: str = Depends(get_current_sub)):
+async def get_permissions(token_data=Depends(require_role("ROLE_ADMIN"))):
     return await permission_service.get_all()

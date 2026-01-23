@@ -35,7 +35,7 @@ class Role(BaseModel):
     name: str
     description: Optional[str] = None
     isDefault: bool = False
-    permissions: List[MongoRef] = []
+    permissionIds: List[str] = []
     createdAt: datetime = Field(default_factory=datetime.utcnow)
     updatedAt: datetime = Field(default_factory=datetime.utcnow)
 
@@ -52,10 +52,10 @@ class User(BaseModel):
     password: str  # Hashed
     enabled: bool = True
     confirmed: bool = False
-    tenant: str
+    tenantId: str
     timezone: Optional[str] = None
-    role: Optional[MongoRef] = None
-    permissions: List[MongoRef] = []
+    roleId: Optional[str] = None
+    permissionIds: List[str] = []
     attributes: Dict[str, Any] = {}
     createdAt: datetime = Field(default_factory=datetime.utcnow)
     updatedAt: datetime = Field(default_factory=datetime.utcnow)

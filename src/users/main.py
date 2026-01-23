@@ -10,6 +10,7 @@ from users.utils.db import db
 from users.utils.redis_client import redis_client
 from users.controllers import admin_controller, user_controller
 import sys
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="User Management Service", version="1.0.0")
 
@@ -34,6 +35,16 @@ async def shutdown_event():
     log.info("Shutting down User Management Service")
     db.close()
     await redis_client.close()
+
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=config.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 app.include_router(admin_controller.router, tags=["Admin"])
