@@ -40,7 +40,8 @@ async def search_users(
 ):
     log.debug(f"search_users: {query}")
     tenant = token_data.get("tenantId", "")
-    return await user_service.search_users(query, tenant)
+    query["tenantId"] = tenant
+    return await user_service.search_users(query)
 
 
 @router.post("/admin/user")
@@ -143,6 +144,7 @@ async def get_user_admin(id: str, token_data=Depends(require_role("ROLE_ADMIN"))
 
 @router.get("/admin/roles")
 async def get_roles(token_data=Depends(require_role("ROLE_ADMIN"))):
+    # TODO remove super_admin from role list
     return await role_service.get_all_roles()
 
 

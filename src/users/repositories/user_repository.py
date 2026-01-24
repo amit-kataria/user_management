@@ -80,7 +80,7 @@ class UserRepository:
 
     async def ensure_indexes(self):
         await self.collection().create_index("email", unique=True)
-        await self.collection().create_index("roleId")
+        await self.collection().create_index("roleIds")
         await self.collection().create_index("permissionIds")
         await self.collection().create_index("deletedAt", expireAfterSeconds=7776000)
 

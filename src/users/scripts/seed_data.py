@@ -44,19 +44,19 @@ async def seed():
 
     if not existing_user:
         admin_role = saved_roles.get("ROLE_ADMIN")
-        role_ref = None
+        role_ids = []
         if admin_role:
-            role_ref = MongoRef.from_id("roles", admin_role.id)
+            role_ids = [admin_role.id]
 
         user = User(
             firstName="Super",
             lastName="Admin",
             email=admin_email,
             password=pwd_context.hash("admin123"),
-            tenant="default",
+            tenantId="default",
             enabled=True,
             confirmed=True,
-            role=role_ref,
+            roleIds=role_ids,
         )
         await user_repo.create(user)
         print(f"Created admin user: {admin_email}")

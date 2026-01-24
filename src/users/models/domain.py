@@ -54,7 +54,7 @@ class User(BaseModel):
     confirmed: bool = False
     tenantId: str
     timezone: Optional[str] = None
-    roleId: Optional[str] = None
+    roleIds: List[str] = []
     permissionIds: List[str] = []
     attributes: Dict[str, Any] = {}
     createdAt: datetime = Field(default_factory=datetime.utcnow)

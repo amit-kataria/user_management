@@ -49,11 +49,9 @@ class RoleService:
             )
 
     async def delete_role(self, role_id: str, performed_by: str):
-        # check usage
-        # This needs a query on users specific to the DBRef structure used
-        # Structure: role: { $ref: "roles", $id: { $oid: "..." } }
+        # Check if any users have this role in their roleIds array
         users_with_role = await user_repo.collection().count_documents(
-            {"role.$id.$oid": role_id}
+            {"roleIds": role_id}
         )
         if users_with_role > 0:
             raise HTTPException(

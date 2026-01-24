@@ -114,15 +114,15 @@ class JWTValidator:
 
             # Replay protection
             # await validate_jti(payload)
-
+            log.debug(f"Token validated: {payload}")
             return payload
 
-        except ExpiredSignatureError:
-            log.warning("JWT expired")
+        except ExpiredSignatureError as e:
+            log.warning("JWT expired, %s", str(e))
             raise HTTPException(401, "Token expired")
 
         except JWTError as e:
-            log.warning(f"JWT invalid: {e}")
+            log.warning("JWT invalid, %s", str(e))
             raise HTTPException(401, "Invalid token")
 
         except Exception as e:
@@ -169,6 +169,11 @@ jwks_cache = JWKSCache(config.JWKS_URL)
 validator = JWTValidator()
 
 
+async def validate_token(token: str = Depends(oauth2_scheme)):
+    log.debug(f"validating token : {token}")
+    return await validator.verify_token(token)
+
+
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     log.debug(f"get_current_user: {token}")
     return await validator.verify_token(token)
@@ -179,9 +184,8 @@ def require_role(required_role: str):
         log.debug(
             f"role_checker: checking for required role {required_role} in {token_data}"
         )
-        role = token_data.get("role", "")
-        roles = [role]
-        log.debug(f"role_checker: role: {roles}")
+        roles = token_data.get("roles", [])
+        log.debug(f"role_checker: roles: {roles}")
 
         if required_role not in roles:
             log.warning(f"Insufficient privileges for role {required_role}")

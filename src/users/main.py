@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from users.config.config import config
 from users.utils.db import db
 from users.utils.redis_client import redis_client
-from users.controllers import admin_controller, user_controller
+from users.controllers import admin_controller, user_controller, hierarchy_controller
 import sys
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -49,6 +49,7 @@ app.add_middleware(
 
 app.include_router(admin_controller.router, tags=["Admin"])
 app.include_router(user_controller.router, tags=["User"])
+app.include_router(hierarchy_controller.router, tags=["Hierarchy"])
 
 
 @app.get("/health")

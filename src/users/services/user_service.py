@@ -99,18 +99,19 @@ class UserService:
             )
         return success
 
-    async def search_users(self, query: dict, tenant: str) -> List[User]:
+    async def search_users(self, query: dict) -> List[User]:
         mongo_filter = {}
         if "name" in query and query["name"]:
             mongo_filter["$or"] = [
                 {"firstName": {"$regex": query["name"], "$options": "i"}},
                 {"lastName": {"$regex": query["name"], "$options": "i"}},
             ]
+        if "tenantId" in query and query["tenantId"]:
+            mongo_filter["tenantId"] = query["tenantId"]
         if "role" in query and query["role"]:
             # Needs careful handling of mongo ref if query is by role name vs role ID
             pass
 
-        mongo_filter["tenantId"] = tenant
         log.debug(f"search_users mongo_filter -> {mongo_filter}")
         return await user_repo.get_all(filter_query=mongo_filter)
 
