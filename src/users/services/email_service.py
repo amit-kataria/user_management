@@ -20,6 +20,7 @@ async def send_email(
         text_body: Plain text content (optional, falls back to HTML)
     """
     try:
+        log.info(f"Sending email to {to_email} with subject: {subject}")
         # Create message
         msg = MIMEMultipart("alternative")
         msg["From"] = config.SMTP_USER
@@ -36,12 +37,15 @@ async def send_email(
         msg.attach(part2)
 
         # Connect to SMTP server and send email
+        log.info(f"Connecting to SMTP server: {config.SMTP_HOST}:{config.SMTP_PORT}")
         with smtplib.SMTP(config.SMTP_HOST, config.SMTP_PORT) as server:
+            log.info(f"Connected to SMTP server: {config.SMTP_HOST}:{config.SMTP_PORT}")
             server.starttls()  # Secure the connection
+            log.info(f"Secure connection established")
             server.login(config.SMTP_USER, config.SMTP_PASSWORD)
+            log.info(f"Logged in to SMTP server as {config.SMTP_USER}")
             server.send_message(msg)
-
-        log.info(f"Email sent successfully to {to_email} with subject: {subject}")
+            log.info(f"Email sent successfully to {to_email} with subject: {subject}")
         return True
 
     except Exception as e:

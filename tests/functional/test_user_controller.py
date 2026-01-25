@@ -3,16 +3,17 @@ from passlib.context import CryptContext
 from tests.utils.api_client import APIClient
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+test_email = "amit2.kataria@gmail.com"
 
 
 class TestUserController:
     def test_register_user(self, anonymous_client: APIClient, db):
         payload = {
-            "email": "public_register@example.com",
+            "email": test_email,
             "password": "Password123!",
             "firstName": "Public",
             "lastName": "User",
-            "tenant": "test-tenant",
+            "tenantId": "self",
         }
 
         # Cleanup before
@@ -28,7 +29,7 @@ class TestUserController:
 
     def test_forgot_password(self, anonymous_client: APIClient, db):
         # We need an existing user
-        email = "forgot_pwd@example.com"
+        email = test_email
         db.users.delete_one({"email": email})
 
         # Insert user
@@ -40,7 +41,7 @@ class TestUserController:
                 "lastName": "Pwd",
                 "enabled": True,
                 "confirmed": True,
-                "tenantId": "test-tenant",
+                "tenantId": "self",
             }
         )
 

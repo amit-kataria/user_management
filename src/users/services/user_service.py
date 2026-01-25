@@ -54,7 +54,7 @@ class UserService:
             lastName=last_name,
             email=email,
             password=pwd_context.hash(password),
-            tenant=tenant,
+            tenantId=tenant,
             confirmed=False,
             enabled=True,
             createdAt=datetime.utcnow(),

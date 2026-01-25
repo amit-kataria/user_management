@@ -20,7 +20,7 @@ async def register(payload: Dict = Body(...)):
         password=payload["password"],
         first_name=payload.get("firstName", ""),
         last_name=payload.get("lastName", ""),
-        tenant=payload.get("tenant", "default"),
+        tenant=payload.get("tenantId", "default"),
     )
 
 
