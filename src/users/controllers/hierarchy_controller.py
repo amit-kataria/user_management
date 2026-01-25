@@ -50,7 +50,7 @@ async def get_users_by_role(
     }
 
     log.debug(f"Filter query: {filter_query}")
-    users = await user_service.search_users(filter_query=filter_query)
+    users = await user_service.search_users(filter_query)
 
     # Fetch users matching the criteria
     # users = await user_repo.get_all(filter_query=filter_query, limit=1000)
@@ -86,7 +86,7 @@ async def get_all_active_users(
     }
 
     log.debug(f"Filter query: {filter_query}")
-    users = await user_service.search_users(filter_query=filter_query)
+    users = await user_service.search_users(filter_query)
 
     # Fetch users matching the criteria
     # users = await user_repo.get_all(filter_query=filter_query, limit=1000)

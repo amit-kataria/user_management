@@ -49,7 +49,9 @@ class User(BaseModel):
     gender: Optional[str] = None
     email: EmailStr
     phone: Optional[str] = None
-    password: str  # Hashed
+    password: Optional[str] = Field(
+        default=None, repr=False, exclude=True
+    )  # Hashed, hidden in repr and model_dump
     enabled: bool = True
     confirmed: bool = False
     tenantId: str

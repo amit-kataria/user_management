@@ -22,6 +22,7 @@ class LogFormatter(logging.Formatter):
     def format(self, record):
         # Apply clipping to all fields
         record.threadName = self._lclip(record.threadName, 10)
+        record.levelname = self._lclip(record.levelname, 5)
         record.filename = self._lclip(record.filename, 25)
         return super().format(record)
 

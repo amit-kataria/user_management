@@ -19,7 +19,7 @@ class UserService:
         return await user_repo.get_by_id(user_id)
 
     async def create_auto_confirmed_user(
-        self, user_in: User, performed_by: str
+        self, user_in: User, performed_by: str, tenant: str
     ) -> User:
         existing = await user_repo.get_by_email(user_in.email)
         if existing:
@@ -31,8 +31,10 @@ class UserService:
         user_in.createdBy = performed_by
         user_in.createdAt = datetime.utcnow()
         user_in.updatedAt = datetime.utcnow()
+        user_in.tenantId = tenant
 
         created = await user_repo.create(user_in)
+        log.debug(f"created user {created}")
         await audit_repo.log_event("CREATE_USER", "users", created.id, performed_by)
         await publish_event("user_events", "USER_CREATED", created.model_dump())
         return created
@@ -108,9 +110,16 @@ class UserService:
             ]
         if "tenantId" in query and query["tenantId"]:
             mongo_filter["tenantId"] = query["tenantId"]
-        if "role" in query and query["role"]:
+        if "roleIds" in query and query["roleIds"]:
             # Needs careful handling of mongo ref if query is by role name vs role ID
-            pass
+            mongo_filter["roleIds"] = {"$in": [query["roleIds"]]}
+        if "enabled" in query and query["enabled"]:
+            mongo_filter["enabled"] = query["enabled"]
+        if "confirmed" in query and query["confirmed"]:
+            mongo_filter["confirmed"] = query["confirmed"]
+        if "email" in query and query["email"]:
+            mongo_filter["email"] = query["email"]
+        mongo_filter["deletedAt"] = {"$exists": False}
 
         log.debug(f"search_users mongo_filter -> {mongo_filter}")
         return await user_repo.get_all(filter_query=mongo_filter)

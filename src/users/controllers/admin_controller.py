@@ -22,7 +22,9 @@ async def create_auto_confirmed_user(
     user: User, token_data=Depends(require_role("ROLE_ADMIN"))
 ):
     log.debug(f"create_auto_confirmed_user: {user}")
-    return await user_service.create_auto_confirmed_user(user, token_data["sub"])
+    created_by = token_data["sub"]
+    tenant = token_data.get("tenantId", "")
+    return await user_service.create_auto_confirmed_user(user, created_by, tenant)
 
 
 @router.get("/admins/{id}")
