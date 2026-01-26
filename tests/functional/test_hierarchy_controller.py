@@ -65,7 +65,7 @@ class TestHierarchyController:
     def test_get_all_active_users(self, api_client):
         response = api_client.get("hierarchy/tenant/h-tenant/users")
         assert response.status_code == 200
-        users = response.json()
+        users = response.json()["data"]
 
         emails = [u["email"] for u in users]
         assert "h_annotator@test.com" in emails
@@ -75,7 +75,7 @@ class TestHierarchyController:
     def test_get_users_by_role(self, api_client):
         response = api_client.get("hierarchy/tenant/h-tenant/users/ROLE_ANNOTATOR")
         assert response.status_code == 200
-        users = response.json()
+        users = response.json()["data"]
         emails = [u["email"] for u in users]
         assert "h_annotator@test.com" in emails
         assert "h_reviewer@test.com" not in emails

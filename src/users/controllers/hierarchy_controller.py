@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Path
+from users.utils.response_util import success_response
 from users.models.domain import User
 from users.repositories.user_repository import user_repo
 from users.repositories.role_repository import role_repo
@@ -12,7 +13,7 @@ log = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get("/hierarchy/tenant/{tenantId}/users/{role_type}", response_model=List[User])
+@router.get("/hierarchy/tenant/{tenantId}/users/{role_type}")
 async def get_users_by_role(
     tenantId: str = Path(..., description="Tenant ID"),
     role_type: str = Path(
@@ -57,10 +58,10 @@ async def get_users_by_role(
 
     log.info(f"Found {len(users)} users for tenant {tenantId} with role {role_type}")
 
-    return users
+    return success_response(users, "Users fetched successfully")
 
 
-@router.get("/hierarchy/tenant/{tenantId}/users", response_model=List[User])
+@router.get("/hierarchy/tenant/{tenantId}/users")
 async def get_all_active_users(
     tenantId: str = Path(..., description="Tenant ID"),
     token_data=Depends(validate_token),
@@ -93,4 +94,4 @@ async def get_all_active_users(
 
     log.info(f"Found {len(users)} active users for tenant {tenantId}")
 
-    return users
+    return success_response(users, "Active users fetched successfully")

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Body
+from users.utils.response_util import success_response
 from users.models.domain import User
 from users.services.user_service import user_service
 from users.services.otp_service import generate_otp, verify_otp
@@ -15,13 +16,14 @@ router = APIRouter()
 
 @router.post("/user/register")
 async def register(payload: Dict = Body(...)):
-    return await user_service.register_user_self(
+    result = await user_service.register_user_self(
         email=payload["email"],
         password=payload["password"],
         first_name=payload.get("firstName", ""),
         last_name=payload.get("lastName", ""),
         tenant=payload.get("tenantId", "default"),
     )
+    return success_response(result, "User registered successfully")
 
 
 @router.put("/user/confirm")
@@ -31,7 +33,7 @@ async def confirm(payload: Dict = Body(...)):
     if not email or not otp:
         raise HTTPException(400, "Email and OTP required")
     await user_service.confirm_user(email, otp)
-    return {"message": "User confirmed"}
+    return success_response(None, "User confirmed")
 
 
 @router.put("/user/password")
@@ -46,7 +48,7 @@ async def change_password_self(
     if not new_pass:
         raise HTTPException(400, "Password required")
     await user_service.change_password(sub, new_pass, sub)
-    return {"message": "Password updated"}
+    return success_response(None, "Password updated")
 
 
 @router.post("/user/forget")
@@ -60,7 +62,7 @@ async def forgot_password(payload: Dict = Body(...)):
         otp = await otp_service.generate_otp(email)
         await email_service.send_otp_email(email, otp)
 
-    return {"message": "If email exists, OTP sent"}
+    return success_response(None, "If email exists, OTP sent")
 
 
 @router.post("/user/reset")
@@ -82,4 +84,4 @@ async def reset_password(payload: Dict = Body(...)):
 
     await user_service.change_password(user.id, new_pass, "SELF_RESET")
 
-    return {"message": "Password reset successfully"}
+    return success_response(None, "Password reset successfully")

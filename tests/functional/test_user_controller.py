@@ -21,7 +21,7 @@ class TestUserController:
 
         response = anonymous_client.post("user/register", data=payload)
         assert response.status_code == 200
-        data = response.json()
+        data = response.json()["data"]
         assert data["email"] == payload["email"]
 
         # Cleanup
