@@ -42,7 +42,7 @@ async def get_any_user(id: str, token_data=Depends(require_role("ROLE_ADMIN"))):
 
 @router.post("/admin/users/search")
 async def search_users(
-    query: Dict = Body(...), token_data=Depends(require_role("ROLE_ADMIN"))
+    query: Dict = Body(default={}), token_data=Depends(require_role("ROLE_ADMIN"))
 ):
     log.debug(f"search_users: {query}")
     tenant = token_data.get("tenantId", "")

@@ -175,7 +175,7 @@ async def validate_token(token: str = Depends(oauth2_scheme)):
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
-    log.debug(f"get_current_user: {token}")
+    log.debug("get_current_user from token")
     return await validator.verify_token(token)
 
 
