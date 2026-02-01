@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Body, Path
+from fastapi import APIRouter, Depends, HTTPException, Body, Path, File, UploadFile
 from users.utils.response_util import success_response
 from users.models.domain import User, Role, Permission, MongoRef
 from users.services.user_service import user_service
@@ -7,6 +7,9 @@ from users.services.permission_service import permission_service
 from users.utils.security import get_current_user, require_role
 from typing import List, Dict
 from users.config.logging_config import get_logger
+import io
+import csv
+from fastapi.responses import StreamingResponse
 
 log = get_logger(__name__)
 
@@ -55,6 +58,39 @@ async def invite_user(user: User, token_data=Depends(require_role("ROLE_ADMIN"))
     log.debug(f"invite_user: {user}")
     return success_response(
         await user_service.invite_user(user, token_data["sub"]), "User invited"
+    )
+
+
+@router.post("/admin/users/bulk-invite")
+async def bulk_invite_users(
+    file: UploadFile = File(...), token_data=Depends(require_role("ROLE_ADMIN"))
+):
+    log.info(f"bulk_invite_users started by {token_data['sub']}")
+    tenant_id = token_data.get("tenantId", "default")
+    performed_by = token_data["sub"]
+
+    success_count, errors = await user_service.bulk_invite_users(
+        file, tenant_id, performed_by
+    )
+
+    return success_response(
+        {"success_count": success_count, "errors": errors},
+        f"Bulk invite completed. Success: {success_count}, Failures: {len(errors)}",
+    )
+
+
+@router.get("/admin/users/template")
+async def download_template(token_data=Depends(require_role("ROLE_ADMIN"))):
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["FirstName", "LastName", "Email", "PhoneNumber", "Role"])
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": "attachment; filename=user_invite_template.csv"
+        },
     )
 
 

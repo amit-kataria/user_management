@@ -1,3 +1,7 @@
+from ast import Dict
+from ast import Tuple
+from users.services.role_service import role_service
+from fastapi import UploadFile
 from users.repositories.user_repository import user_repo
 from users.repositories.audit_repository import audit_repo
 from users.models.domain import User, MongoRef
@@ -8,6 +12,8 @@ from fastapi import HTTPException
 from datetime import datetime
 from typing import Optional, List
 from users.config.logging_config import get_logger
+import io
+import csv
 
 log = get_logger(__name__)
 
@@ -198,6 +204,64 @@ class UserService:
                 performed_by,
                 {"permission": permission_id},
             )
+
+    async def bulk_invite_users(
+        self,
+        file: UploadFile,
+        tenant_id: str,
+        performed_by: str,
+    ) -> tuple[int, list[dict]]:
+        content = await file.read()
+
+        stream = io.StringIO(content.decode("utf-8"))
+        reader = csv.DictReader(stream)
+
+        roles = await role_service.get_all_roles()
+        role_map = {r.name.lower(): str(r.id) for r in roles}
+        # Also support mapping without ROLE_ prefix
+        role_map.update({r.name.lower().replace("role_", ""): str(r.id) for r in roles})
+
+        success_count = 0
+        errors = []
+
+        for row in reader:
+            try:
+                # Expected headers: FirstName, LastName, Email, PhoneNumber, Role
+                first_name = row.get("FirstName")
+                last_name = row.get("LastName")
+                email = row.get("Email")
+                phone = row.get("PhoneNumber")
+                role_name = row.get("Role", "").lower()
+
+                if not email or not first_name:
+                    raise ValueError(f"Missing required fields for row: {row}")
+
+                role_id = role_map.get(role_name)
+                if not role_id:
+                    log.warning(
+                        f"Role {role_name} not found, using default if applicable"
+                    )
+                    # You might want to skip or use a default role. Let's error for clarity.
+                    # raise ValueError(f"Role {role_name} is invalid")
+
+                user_in = User(
+                    firstName=first_name,
+                    lastName=last_name or "",
+                    email=email,
+                    phone=phone,
+                    tenantId=tenant_id,
+                    roleIds=[role_id] if role_id else [],
+                    password="ChangeMe123!",  # Should probably be random or handled by invite flow
+                    enabled=True,
+                    confirmed=False,
+                )
+
+                await user_service.invite_user(user_in, performed_by)
+                success_count += 1
+            except Exception as e:
+                log.error(f"Error inviting user {row.get('Email')}: {str(e)}")
+                errors.append({"email": row.get("Email"), "error": str(e)})
+        return success_count, errors
 
 
 user_service = UserService()
